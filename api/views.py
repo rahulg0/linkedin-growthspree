@@ -6,28 +6,93 @@ from rest_framework import status
 
 class LinkedInAdAccountsAPIView(APIView):
     def get(self, request):
-        access_token = request.data.get("access_token")
-        if not access_token:
-            return Response({"error": "Missing access_token"}, status=400)
+        try:
+            access_token = request.headers.get('Authorization')
+            if not access_token:
+                return Response({'error': 'Authorization header missing.'}, status=status.HTTP_401_UNAUTHORIZED)
 
-        url = "https://api.linkedin.com/rest/adAccounts?q=search&search=(type:(values:List(BUSINESS)),status:(values:List(ACTIVE,CANCELED)))"
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "LinkedIn-Version": settings.LINKEDIN_VERSION,
-            "X-Restli-Protocol-Version": "2.0.0",
-        }
-        params = {
-            "q": "search",
-            "search": "(type:(values:List(BUSINESS)),status:(values:List(ACTIVE,CANCELED)))",
-            # "sort":"(field:ID,order:DESCENDING)"
-            # "fields": "id,name,test,reference"
-        }
+            url = "https://api.linkedin.com/rest/adAccounts?q=search&search=(type:(values:List(BUSINESS)),status:(values:List(ACTIVE,CANCELED)))"
+            headers = {
+                "Authorization": access_token,
+                "LinkedIn-Version": settings.LINKEDIN_VERSION,
+                "X-Restli-Protocol-Version": "2.0.0",
+            }
+            # params = {
+            #     "q": "search",
+            #     "search": "(type:(values:List(BUSINESS)),status:(values:List(ACTIVE,CANCELED)))",
+            #     "sort":"(field:ID,order:DESCENDING)",
+            #     "fields": "id,name,test,reference"
+            # }
 
-        response = requests.get(url, headers=headers)
-        data = response.json()
-        print(data)
+            response = requests.get(url, headers=headers)
+            data = response.json()
+            print(data)
 
-        if response.status_code != 200:
-            return Response(data, status=response.status_code)
+            if response.status_code != 200:
+                return Response(data, status=response.status_code)
 
-        return Response(data, status=200)
+            return Response(data, status=200)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class LinkedInAdAnalyticsView(APIView):
+    def post(self, request):
+        try:
+            auth_header = request.headers.get('Authorization')
+            if not auth_header:
+                return Response({'error': 'Authorization header missing.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+            linkedin_version = request.headers.get('Linkedin-Version', '202411')
+
+            time_granularity = request.data.get('timeGranularity', 'DAILY')
+            start_date = request.data.get('start_date', None)
+            end_date = request.data.get('end_date', None)
+            account = request.data.get('account', None)
+
+            if not account:
+                return Response({'error': 'account id must be provided '}, status=status.HTTP_400_BAD_REQUEST)
+            if not start_date or not isinstance(start_date, dict) or not end_date or not isinstance(end_date, dict):
+                return Response({'error': 'start date or end date must be provided as a dictionary with year, month, and day.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            accounts_param = f"List(urn%3Ali%3AsponsoredAccount%3A{account})"
+
+            if start_date:
+                start_date_range_param = f"start:(year:{start_date.get('year')},month:{start_date.get('month')},day:{start_date.get('day')})"
+            if end_date:
+                end_date_range_param = f"end:(year:{end_date.get('year')},month:{end_date.get('month')},day:{end_date.get('day')})"
+            
+            # if start_date:
+            #     date_range_param = f"({start_date_range_param})"
+            # elif end_date:
+            #     date_range_param = f"({end_date_range_param})"
+            # elif start_date and end_date:
+            #     date_range_param = f"({start_date_range_param},{end_date_range_param})"
+
+            date_range_param = f"({start_date_range_param})" if start_date else (f"({end_date_range_param})" if end_date else (f"({start_date_range_param},{end_date_range_param})" if start_date and end_date else ""))
+
+            linkedin_url = (
+                f'https://api.linkedin.com/rest/adAnalytics'
+                f'?q=analytics'
+                f'&pivot=ACCOUNT'
+                f'&timeGranularity={time_granularity}'
+                f'&dateRange={date_range_param}'
+                f'&accounts={accounts_param}'
+            )
+
+            headers = {
+                'Authorization': auth_header,
+                'Linkedin-Version': linkedin_version,
+                'X-Restli-Protocol-Version': '2.0.0',
+            }
+
+            response = requests.get(linkedin_url, headers=headers)
+
+            if response.status_code == 200:
+                return Response(response.json(), status=response.status_code)
+            else:
+                return Response({'error': response.json()}, status=response.status_code)
+        
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
