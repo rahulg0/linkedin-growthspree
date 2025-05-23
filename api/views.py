@@ -1,8 +1,12 @@
+from django.shortcuts import get_object_or_404
 import requests
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from api.models import Campaign, CampaignChangeLog
+from api.serializers import CampaignSerializer
+from deepdiff import DeepDiff
 
 class LinkedInAdAccountsAPIView(APIView):
     def get(self, request):
@@ -96,3 +100,58 @@ class LinkedInAdAnalyticsView(APIView):
         
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LinkedinCampaignAPIView(APIView):
+    def post(self, request):
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return Response({'error': 'Authorization header missing.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        serializer = CampaignSerializer(data=request.data)
+        if serializer.is_valid():
+            campaign = serializer.save()
+            return Response({"message": "Campaign created", "id": campaign.campaign_id}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, pk):
+        campaign = get_object_or_404(Campaign, pk=pk)
+        old_data = CampaignSerializer(campaign).data
+
+        serializer = CampaignSerializer(campaign, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+
+            new_data = serializer.data
+            diff = DeepDiff(old_data, new_data, ignore_order=True).to_dict()
+
+            CampaignChangeLog.objects.create(
+                campaign=campaign,
+                # changed_by=request.user.username if request.user.is_authenticated else "system",
+                data=new_data,
+                changes=diff
+            )
+
+            return Response(new_data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def get(self, request):
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return Response({'error': 'Authorization header missing.'}, status=status.HTTP_401_UNAUTHORIZED)
+        linkedin_version = request.headers.get('Linkedin-Version', '202411')
+        account_id = request.GET.get('account_id')
+        headers = {
+            'Authorization': auth_header,
+            'Linkedin-Version': linkedin_version,
+            'X-Restli-Protocol-Version': '2.0.0',
+        }
+        url = f"https://api.linkedin.com/rest/adAccounts/{account_id}/adCampaigns?q=search&search=(status:(values:List(ACTIVE)))&sortOrder=DESCENDING"
+        response = requests.get(linkedin_url, headers=headers)
+
+
+
+# class LinkedinProfessionalDemographicsData(APIView):
+
+#     def get(self, request):
+        
