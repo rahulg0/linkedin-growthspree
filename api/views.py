@@ -4,9 +4,10 @@ from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from api.models import Campaign, CampaignChangeLog
+from api.models import Campaign, CampaignChangeLog, AdAnalyticsLinkedin
 from api.serializers import CampaignSerializer
 from deepdiff import DeepDiff
+from django.db.models import Q, Sum, F
 
 class LinkedInAdAccountsAPIView(APIView):
     def get(self, request):
@@ -150,8 +151,47 @@ class LinkedinCampaignAPIView(APIView):
         response = requests.get(linkedin_url, headers=headers)
 
 
+class LinkedinStatisticsAPIView(APIView):
+    FILTER_MAP = {
+        'device': 'device__iexact',
+        'date_from': 'date__gte',
+        'date_to': 'date__lte',
+        'campaign_name': 'creative__campaign__name__icontains',
+        'creative_name': 'creative__name__icontains',
+        'min_clicks': 'clicks__gte',
+        'max_clicks': 'clicks__lte',
+        'min_impressions': 'impressions__gte',
+        'max_impressions': 'impressions__lte',
+        'seniority': 'creative__seniorities__name__icontains',
+        'job_title': 'creative__job_titles__name__icontains',
+        'country': 'creative__countries__name__icontains',
+        'industry': 'creative__industries__name__icontains',
+        'staff_min': 'creative__staff_count_range__min_value__gte',
+        'staff_max': 'creative__staff_count_range__max_value__lte',
+    }
 
-# class LinkedinProfessionalDemographicsData(APIView):
+    def get(self, request):
+        queryset = AdAnalyticsLinkedin.objects.select_related('creative__campaign')
 
-#     def get(self, request):
-        
+        filters = Q()
+        for param, value in request.GET.items():
+            if not value:
+                continue
+            filter_field = self.FILTER_MAP.get(param)
+            if filter_field:
+                filters &= Q(**{filter_field: value})
+
+        filtered_qs = queryset.filter(filters)
+
+        data = (
+            filtered_qs
+            .values('creative__campaign__name','creative__name','device')
+            .annotate(
+                total_clicks=Sum('clicks'),
+                total_impressions=Sum('impressions'),
+            )
+            .order_by('date')
+        )
+        data = list(data)
+
+        return Response({"table_data": data}, status=status.HTTP_200_OK)        
