@@ -79,11 +79,12 @@ class LinkedInAdAnalyticsView(APIView):
 
             linkedin_url = (
                 f'https://api.linkedin.com/rest/adAnalytics'
-                f'?q=analytics'
-                f'&pivot=ACCOUNT'
+                f'?q=statistics'
+                f'&pivots=List(CREATIVE,CAMPAIGN,IMPRESSION_DEVICE_TYPE)'
                 f'&timeGranularity={time_granularity}'
                 f'&dateRange={date_range_param}'
                 f'&accounts={accounts_param}'
+                f'&fields=clicks,impressions,pivotValues,dateRange'
             )
 
             headers = {
@@ -95,7 +96,7 @@ class LinkedInAdAnalyticsView(APIView):
             response = requests.get(linkedin_url, headers=headers)
 
             if response.status_code == 200:
-                return Response(response.json(), status=response.status_code)
+                return Response(response.json().get("elements"), status=response.status_code)
             else:
                 return Response({'error': response.json()}, status=response.status_code)
         
@@ -148,7 +149,7 @@ class LinkedinCampaignAPIView(APIView):
             'X-Restli-Protocol-Version': '2.0.0',
         }
         url = f"https://api.linkedin.com/rest/adAccounts/{account_id}/adCampaigns?q=search&search=(status:(values:List(ACTIVE)))&sortOrder=DESCENDING"
-        response = requests.get(linkedin_url, headers=headers)
+        # response = requests.get(linkedin_url, headers=headers)
 
 
 class LinkedinStatisticsAPIView(APIView):

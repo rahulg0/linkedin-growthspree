@@ -73,3 +73,69 @@ class CampaignChangeLog(models.Model):
 
     def __str__(self):
         return f"ChangeLog for Campaign {self.campaign.id} at {self.changed_at}"
+
+
+class CampaignLinkendin(models.Model):
+    campaign_id = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=255)
+
+
+class CreativeLinkedin(models.Model):
+    creative_id = models.CharField(max_length=100)
+    name = models.CharField(max_length=255, default=None, null=True, blank=True)
+    campaign = models.ForeignKey(CampaignLinkendin, on_delete=models.CASCADE, related_name='creatives')
+
+    class Meta:
+        unique_together = ('creative_id', 'campaign')
+
+
+class AdAnalyticsLinkedin(models.Model):
+    creative = models.ForeignKey(CreativeLinkedin, on_delete=models.CASCADE, related_name='ad_analytics')
+    clicks = models.IntegerField(default=0)
+    impressions = models.IntegerField(default=0)
+    device = models.CharField(max_length=50, null=True, blank=True)
+    date = models.DateField()
+
+    def __str__(self):
+        return f"AdAnalytics for Campaign {self.campaign.id} from {self.date_range_start} to {self.date_range_end}"
+
+
+class Seniority(models.Model):
+    creative = models.ForeignKey(CreativeLinkedin, on_delete=models.CASCADE, related_name='seniorities')
+    seniority_id = models.CharField(max_length=100, default=None, null=True, blank=True)
+    name = models.CharField(max_length=255, default=None, null=True, blank=True)
+    class Meta:
+        unique_together = ('seniority_id', 'creative')
+
+
+class JobTitle(models.Model):
+    creative = models.ForeignKey(CreativeLinkedin, on_delete=models.CASCADE, related_name='job_titles')
+    title_id = models.CharField(max_length=100, default=None, null=True, blank=True)
+    name = models.CharField(max_length=255, default=None, null=True, blank=True)
+    class Meta:
+        unique_together = ('title_id', 'creative')
+
+
+class Country(models.Model):
+    creative = models.ForeignKey(CreativeLinkedin, on_delete=models.CASCADE, related_name='countries')
+    country_id = models.CharField(max_length=100, default=None, null=True, blank=True)
+    name = models.CharField(max_length=255, default=None, null=True, blank=True)
+    class Meta:
+        unique_together = ('country_id', 'creative')
+
+
+class Industry(models.Model):
+    creative = models.ForeignKey(CreativeLinkedin, on_delete=models.CASCADE, related_name='industries')
+    industry_id = models.CharField(max_length=100, default=None, null=True, blank=True)
+    name = models.CharField(max_length=255, default=None, null=True, blank=True)
+    class Meta:
+        unique_together = ('industry_id', 'creative')
+
+
+class StaffCountRange(models.Model):
+    creative = models.ForeignKey(CreativeLinkedin, on_delete=models.CASCADE, related_name='staff_count_range')
+    min_value = models.IntegerField()
+    max_value = models.IntegerField()
+
+    def __str__(self):
+        return f"{self.min_value:,} - {self.max_value:,}"
