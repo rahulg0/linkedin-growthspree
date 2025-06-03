@@ -21,6 +21,7 @@ LINKEDIN_CLIENT_SECRET = os.getenv("LINKEDIN_CLIENT_SECRET")
 LINKEDIN_REDIRECT_URI = os.getenv("LINKEDIN_REDIRECT_URI")
 LINKEDIN_BASE_URL = os.getenv("LINKEDIN_BASE_URL")
 LINKEDIN_VERSION = os.getenv("LINKEDIN_VERSION")
+LINKEDIN_REFRESH_TOKEN = os.getenv("LINKEDIN_REFRESH_TOKEN")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -35,7 +36,7 @@ SECRET_KEY = 'django-insecure--adx)(w0n=aqav#gtq79f2pt-&x@+p6e25#-71h70e(z2dz4ey
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['rahul.growthspreeofficial.com']
+ALLOWED_HOSTS = ['rahul.growthspreeofficial.com','127.0.0.1','localhost']
 
 
 # Application definition
@@ -94,11 +95,14 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DATABASE_NAME', default='postgres'),
+        'USER': os.getenv('DATABASE_USER', default='postgres'),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD', default=''),
+        'HOST': os.getenv('DATABASE_HOST', default='localhost'),
+        'PORT': os.getenv('DATABASE_PORT', default='5432')
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
