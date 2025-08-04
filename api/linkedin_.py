@@ -275,10 +275,7 @@ def get_country_data(data):
         country_name = get_country(country_id, auth)
 
         if country_name:
-            data_.append({
-                'id':country_id,
-                'name':country_name
-            })
+            data_.append(country_name)
         else:
             print(f"Failed to fetch country for ID: {country_id}")
     return data_
@@ -291,10 +288,7 @@ def get_jobtitle_data(data):
         job_title_name = get_title(job_title_id, auth)
 
         if job_title_name:
-            data_.append({
-                'id':job_title_id,
-                'name':job_title_name
-            })
+            data_.append(job_title_name)
         else:
             print(f"Failed to fetch job title for ID: {job_title_id}")
     return data_
@@ -307,10 +301,7 @@ def get_seniority_data(data):
         seniority_name = get_seniority(seniority_id, auth)
 
         if seniority_name:
-            data_.append({
-                'id':seniority_id,
-                'name':seniority_name
-            })
+            data_.append(seniority_name)
         else:
             print(f"Failed to fetch seniority for ID: {seniority_id}")
     return data_
@@ -323,10 +314,7 @@ def get_industry_data(data):
         industry_name = get_industry(industry_id, auth)
 
         if industry_name:
-           data_.append({
-                'id':industry_id,
-                'name':industry_name
-            }) 
+           data_.append(industry_name) 
         else:
             print(f"Failed to fetch industry for ID: {industry_name}")
     return data_
@@ -338,7 +326,5 @@ def get_staff_range_data(data):
         if match:
             min_val = int(match.group(1))
             max_val = int(match.group(2))
-            data_.append({
-                f'{min_val} - {max_val}'
-            })
+            data_.append(f'{min_val} - {max_val}')
     return data_
