@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 import requests
+from rest_framework.decorators import api_view
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -8,6 +9,8 @@ from api.models import Campaign, CampaignChangeLog, AdAnalyticsLinkedin
 from api.serializers import CampaignSerializer
 from deepdiff import DeepDiff
 from django.db.models import Q, Sum, F
+from api.tasks import get_linkedin_ad_analytics
+from api.linkedin_ import linkedin_ad_analytics
 
 class LinkedInAdAccountsAPIView(APIView):
     def get(self, request):
@@ -195,4 +198,9 @@ class LinkedinStatisticsAPIView(APIView):
         )
         data = list(data)
 
-        return Response({"table_data": data}, status=status.HTTP_200_OK)        
+        return Response({"table_data": data}, status=status.HTTP_200_OK)
+    
+@api_view(['GET'])
+def linkedinCampaignFunc(request):
+    res  = linkedin_ad_analytics()
+    return Response({"data":res}, status=status.HTTP_200_OK)

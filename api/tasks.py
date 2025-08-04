@@ -20,7 +20,7 @@ def get_auth_token():
 def get_linkedin_ad_analytics():
     try:
         auth = get_auth_token()
-        time_granularity = 'DAILY'
+        time_granularity = 'ALL'
         start_date = None
         end_date = None
         account = '504692795'
@@ -51,7 +51,8 @@ def get_linkedin_ad_analytics():
         }
 
         response = requests.get(linkedin_url, headers=headers)
-        print(response.json())
+        
+        return(response.json())
         
     except Exception as e:
         print(f"Error fetching LinkedIn ad analytics: {str(e)}")
